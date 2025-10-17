@@ -177,16 +177,29 @@ Deno.serve(async (req: Request) => {
       if (!doc.storagePath) continue;
 
       try {
-        const { data: fileData, error: downloadError } = await supabase.storage
-          .from('source-documents')
-          .download(doc.storagePath);
+        let arrayBuffer: ArrayBuffer;
 
-        if (downloadError) {
-          console.error(`Error downloading ${doc.name}:`, downloadError);
-          continue;
+        if (doc.storagePath.startsWith('/documents/')) {
+          const publicUrl = `${supabaseUrl}${doc.storagePath}`;
+          const response = await fetch(publicUrl);
+          if (!response.ok) {
+            console.error(`Error fetching ${doc.name} from public URL:`, response.statusText);
+            continue;
+          }
+          arrayBuffer = await response.arrayBuffer();
+        } else {
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('source-documents')
+            .download(doc.storagePath);
+
+          if (downloadError) {
+            console.error(`Error downloading ${doc.name}:`, downloadError);
+            continue;
+          }
+
+          arrayBuffer = await fileData.arrayBuffer();
         }
 
-        const arrayBuffer = await fileData.arrayBuffer();
         const sourcePdf = await PDFDocument.load(arrayBuffer);
         const copiedPages = await mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
         copiedPages.forEach((page) => mergedPdf.addPage(page));
