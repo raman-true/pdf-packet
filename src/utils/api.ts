@@ -19,6 +19,7 @@ export async function generatePacket(
     await updatePacketStatus(packetId, 'generating');
 
     const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-packet`;
+    const frontendUrl = window.location.origin;
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -30,6 +31,7 @@ export async function generatePacket(
         formData: config.formData,
         documents: config.documents,
         fileName,
+        frontendUrl,
       }),
     });
 

@@ -30,6 +30,7 @@ interface RequestBody {
   formData: FormData;
   documents: Document[];
   fileName: string;
+  frontendUrl?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -46,7 +47,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body: RequestBody = await req.json();
-    const { formData, documents, fileName } = body;
+    const { formData, documents, fileName, frontendUrl } = body;
 
     const mergedPdf = await PDFDocument.create();
     mergedPdf.setTitle(`MAXTERRA Submittal - ${formData.projectName}`);
@@ -255,14 +256,21 @@ Deno.serve(async (req: Request) => {
         let arrayBuffer: ArrayBuffer;
 
         if (storagePath.startsWith('/documents/')) {
-          const publicUrl = `${supabaseUrl}${storagePath}`;
-          const response = await fetch(publicUrl);
+          const documentUrl = frontendUrl
+            ? `${frontendUrl}${storagePath}`
+            : `${supabaseUrl}${storagePath}`;
+
+          console.log(`Fetching document from: ${documentUrl}`);
+
+          const response = await fetch(documentUrl);
           if (!response.ok) {
-            console.error(`Error fetching ${doc.name} from public URL:`, response.statusText);
+            console.error(`Error fetching ${doc.name} from ${documentUrl}:`, response.status, response.statusText);
             continue;
           }
           arrayBuffer = await response.arrayBuffer();
+          console.log(`Successfully fetched ${doc.name}, size: ${arrayBuffer.byteLength} bytes`);
         } else {
+          console.log(`Fetching ${doc.name} from Supabase storage: ${storagePath}`);
           const { data: fileData, error: downloadError } = await supabase.storage
             .from('source-documents')
             .download(storagePath);
@@ -273,6 +281,7 @@ Deno.serve(async (req: Request) => {
           }
 
           arrayBuffer = await fileData.arrayBuffer();
+          console.log(`Successfully downloaded ${doc.name}, size: ${arrayBuffer.byteLength} bytes`);
         }
 
         const sourcePdf = await PDFDocument.load(arrayBuffer);
