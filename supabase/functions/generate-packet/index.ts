@@ -23,6 +23,7 @@ interface Document {
   id: string;
   name: string;
   storagePath?: string;
+  category?: string;
 }
 
 interface RequestBody {
@@ -173,14 +174,88 @@ Deno.serve(async (req: Request) => {
       color: rgb(0.5, 0.5, 0.5),
     });
 
+    async function createDividerPage(title: string, category: string): Promise<void> {
+      const dividerPage = mergedPdf.addPage([612, 792]);
+      const { width, height } = dividerPage.getSize();
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      dividerPage.drawRectangle({
+        x: 0,
+        y: 0,
+        width,
+        height,
+        color: rgb(0.98, 0.98, 0.99),
+      });
+
+      dividerPage.drawLine({
+        start: { x: 50, y: height - 50 },
+        end: { x: width - 50, y: height - 50 },
+        thickness: 3,
+        color: rgb(0.1, 0.1, 0.4),
+      });
+
+      dividerPage.drawLine({
+        start: { x: 50, y: 50 },
+        end: { x: width - 50, y: 50 },
+        thickness: 3,
+        color: rgb(0.1, 0.1, 0.4),
+      });
+
+      const categoryText = category.toUpperCase();
+      const categoryWidth = helveticaFont.widthOfTextAtSize(categoryText, 14);
+      dividerPage.drawText(categoryText, {
+        x: centerX - categoryWidth / 2,
+        y: centerY + 60,
+        size: 14,
+        font: helveticaFont,
+        color: rgb(0.4, 0.4, 0.5),
+      });
+
+      const maxWidth = width - 120;
+      let titleSize = 28;
+      let titleWidth = helveticaBold.widthOfTextAtSize(title, titleSize);
+
+      while (titleWidth > maxWidth && titleSize > 16) {
+        titleSize -= 1;
+        titleWidth = helveticaBold.widthOfTextAtSize(title, titleSize);
+      }
+
+      dividerPage.drawText(title, {
+        x: centerX - titleWidth / 2,
+        y: centerY,
+        size: titleSize,
+        font: helveticaBold,
+        color: rgb(0.1, 0.1, 0.4),
+      });
+
+      const brandText = 'MAXTERRA®';
+      const brandWidth = helveticaBold.widthOfTextAtSize(brandText, 16);
+      dividerPage.drawText(brandText, {
+        x: centerX - brandWidth / 2,
+        y: centerY - 60,
+        size: 16,
+        font: helveticaBold,
+        color: rgb(0.3, 0.3, 0.4),
+      });
+    }
+
     for (const doc of documents) {
-      if (!doc.storagePath) continue;
+      const storagePath = doc.storagePath;
+
+      if (!storagePath) {
+        console.warn(`Document ${doc.name} has no storagePath, skipping`);
+        continue;
+      }
 
       try {
+        await createDividerPage(doc.name, doc.category || 'Document');
+
         let arrayBuffer: ArrayBuffer;
 
-        if (doc.storagePath.startsWith('/documents/')) {
-          const publicUrl = `${supabaseUrl}${doc.storagePath}`;
+        if (storagePath.startsWith('/documents/')) {
+          const publicUrl = `${supabaseUrl}${storagePath}`;
           const response = await fetch(publicUrl);
           if (!response.ok) {
             console.error(`Error fetching ${doc.name} from public URL:`, response.statusText);
@@ -190,7 +265,7 @@ Deno.serve(async (req: Request) => {
         } else {
           const { data: fileData, error: downloadError } = await supabase.storage
             .from('source-documents')
-            .download(doc.storagePath);
+            .download(storagePath);
 
           if (downloadError) {
             console.error(`Error downloading ${doc.name}:`, downloadError);
