@@ -96,12 +96,18 @@ export interface Database {
       documents: {
         Row: {
           id: string;
+          title: string;
+          file_name: string;
+          file_path: string;
           name: string;
-          description: string;
-          file_size: string;
-          file_size_bytes: number;
+          description: string | null;
+          document_type: string;
+          page_count: number;
+          file_size: number | null;
+          file_size_text: string | null;
           storage_path: string;
-          category: string;
+          category: string | null;
+          version: string | null;
           thumbnail_url: string | null;
           is_active: boolean;
           display_order: number;
@@ -110,12 +116,18 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          name: string;
-          description: string;
-          file_size: string;
-          file_size_bytes: number;
-          storage_path: string;
-          category: string;
+          title: string;
+          file_name: string;
+          file_path: string;
+          name?: string;
+          description?: string | null;
+          document_type?: string;
+          page_count?: number;
+          file_size?: number | null;
+          file_size_text?: string | null;
+          storage_path?: string;
+          category?: string | null;
+          version?: string | null;
           thumbnail_url?: string | null;
           is_active?: boolean;
           display_order?: number;
@@ -124,12 +136,18 @@ export interface Database {
         };
         Update: {
           id?: string;
+          title?: string;
+          file_name?: string;
+          file_path?: string;
           name?: string;
-          description?: string;
-          file_size?: string;
-          file_size_bytes?: number;
+          description?: string | null;
+          document_type?: string;
+          page_count?: number;
+          file_size?: number | null;
+          file_size_text?: string | null;
           storage_path?: string;
-          category?: string;
+          category?: string | null;
+          version?: string | null;
           thumbnail_url?: string | null;
           is_active?: boolean;
           display_order?: number;
