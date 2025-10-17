@@ -284,15 +284,37 @@ Deno.serve(async (req: Request) => {
           console.log(`Successfully downloaded ${doc.name}, size: ${arrayBuffer.byteLength} bytes`);
         }
 
-        const sourcePdf = await PDFDocument.load(arrayBuffer);
-        const copiedPages = await mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
-        copiedPages.forEach((page) => mergedPdf.addPage(page));
+        if (arrayBuffer.byteLength < 100) {
+          console.error(`Document ${doc.name} is too small (${arrayBuffer.byteLength} bytes), likely a placeholder file. Skipping.`);
+          continue;
+        }
+
+        try {
+          const sourcePdf = await PDFDocument.load(arrayBuffer);
+          const pageCount = sourcePdf.getPageCount();
+          console.log(`Loaded ${doc.name} with ${pageCount} pages`);
+
+          const copiedPages = await mergedPdf.copyPages(sourcePdf, sourcePdf.getPageIndices());
+          copiedPages.forEach((page) => mergedPdf.addPage(page));
+          console.log(`Successfully merged ${doc.name} (${pageCount} pages)`);
+        } catch (pdfError) {
+          console.error(`Failed to load/merge PDF ${doc.name}:`, pdfError);
+          console.error(`PDF buffer size: ${arrayBuffer.byteLength} bytes`);
+          continue;
+        }
       } catch (error) {
         console.error(`Error processing document ${doc.name}:`, error);
+        console.error(`Error details:`, {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          storagePath,
+        });
       }
     }
 
     const pdfBytes = await mergedPdf.save();
+    const totalPages = mergedPdf.getPageCount();
+    console.log(`Final merged PDF has ${totalPages} pages, size: ${(pdfBytes.length / 1024 / 1024).toFixed(2)} MB`);
 
     const storagePath = `packets/${fileName}`;
     const { error: uploadError } = await supabase.storage
