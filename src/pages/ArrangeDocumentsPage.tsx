@@ -70,7 +70,7 @@ export function ArrangeDocumentsPage({ onBack, onGenerate }: ArrangeDocumentsPag
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className={`space-y-3 min-h-[200px] p-4 rounded-lg transition-colors ${
+                className={`space-y-3 min-h-[200px] p-4 rounded-lg transition-all duration-200 ease-out ${
                   snapshot.isDraggingOver
                     ? 'bg-primary-50 dark:bg-primary-950/20 border-2 border-dashed border-primary-400'
                     : 'bg-slate-50 dark:bg-slate-800/50'
@@ -84,21 +84,22 @@ export function ArrangeDocumentsPage({ onBack, onGenerate }: ArrangeDocumentsPag
                   selectedDocuments.map((document, index) => (
                     <Draggable key={document.id} draggableId={document.id} index={index}>
                       {(provided, snapshot) => (
-                        <motion.div
+                        <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.05 }}
                           className={`
                             bg-white dark:bg-slate-900 rounded-lg p-4 shadow-md
-                            border-2 transition-all
+                            border-2 transition-all duration-200 ease-out
                             ${
                               snapshot.isDragging
-                                ? 'border-primary-600 shadow-xl scale-105 rotate-2'
-                                : 'border-slate-200 dark:border-slate-700'
+                                ? 'border-primary-600 shadow-2xl scale-[1.02] z-50'
+                                : 'border-slate-200 dark:border-slate-700 hover:shadow-lg'
                             }
                           `}
+                          style={{
+                            ...provided.draggableProps.style,
+                            transition: snapshot.isDragging ? 'none' : 'all 0.2s ease-out',
+                          }}
                         >
                           <div className="flex items-center gap-4">
                             <div
@@ -152,7 +153,7 @@ export function ArrangeDocumentsPage({ onBack, onGenerate }: ArrangeDocumentsPag
                               </button>
                             </div>
                           </div>
-                        </motion.div>
+                        </div>
                       )}
                     </Draggable>
                   ))
